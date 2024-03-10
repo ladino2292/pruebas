@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interfaz de Usuario para API</title>
+</head>
+<body>
+    <h1>Interfaz de Usuario para API</h1>
+
+    <!-- Formulario para agregar un nuevo elemento -->
+    <h2>Agregar Elemento</h2>
+    <form id="add-form">
+        <label for="id">ID:</label>
+        <input type="text" id="id" name="id"><br>
+        <label for="titulo">Título:</label>
+        <input type="text" id="titulo" name="titulo"><br>
+        <label for="autor">Autor:</label>
+        <input type="text" id="autor" name="autor"><br>
+        <label for="genero">Género:</label>
+        <input type="text" id="genero" name="genero"><br>
+        <button type="submit">Agregar</button>
+        
+    </form>
+
+    <!-- Formulario para eliminar un elemento por ID -->
+    <h2>Eliminar Elemento</h2>
+    <form id="delete-form">
+        <label for="delete-id">ID del Elemento a Eliminar:</label>
+        <input type="text" id="delete-id" name="delete-id"><br>
+        <button type="submit">Eliminar</button>
+    </form>
+
+    <!-- Lista de elementos -->
+    <h2>Lista de Elementos</h2>
+    <ul id="posts-list"></ul>
+
+    <h1>Buscar Post por ID</h1>
+
+    <!-- Formulario para buscar un post por su ID -->
+    <form id="search-form">
+        <label for="post-id">ID del Post:</label>
+        <input type="text" id="post-id" name="post-id"><br>
+        <button type="submit">Buscar</button>
+    </form>
+
+    <!-- Contenedor para mostrar los resultados de la búsqueda -->
+    <div id="search-results"></div>
+
+    <!-- Formulario para actualizar un elemento -->
+    <h2>Actualizar Elemento</h2>
+    <form id="update-form">
+        <label for="update-id">ID del Elemento a Actualizar:</label>
+        <input type="text" id="update-id" name="update-id"><br>
+        <label for="updated-titulo">Nuevo Título:</label>
+        <input type="text" id="updated-titulo" name="updated-titulo"><br>
+        <label for="updated-autor">Nuevo Autor:</label>
+        <input type="text" id="updated-autor" name="updated-autor"><br>
+        <label for="updated-genero">Nuevo Género:</label>
+        <input type="text" id="updated-genero" name="updated-genero"><br>
+        <button type="submit">Actualizar</button>
+    </form>
+       <!-- Contenedor para mostrar el resultado de la actualización -->
+       <div id="update-result"></div>
+
+
+    <script>
+        // Función para cargar y mostrar los elementos desde la API
+        async function mostrarElementos() {
+            const response = await fetch('http://localhost:8000/posts');
+            const elementos = await response.json();
+            const elementosList = document.getElementById('posts-list');
+            elementosList.innerHTML = ''; // Limpiar contenido previo
+            elementos.forEach(elemento => {
+                const elementoItem = document.createElement('li');
+                elementoItem.textContent = `ID: ${elemento.id} - Título: ${elemento.titulo} - Autor: ${elemento.autor} - Género: ${elemento.genero}`;
+                elementosList.appendChild(elementoItem);
+            });
+        }
+
+        // Llamar a la función para mostrar los elementos cuando se carga la página
+        mostrarElementos();
+
+        // Manejar el envío del formulario de agregar elemento
+        const addForm = document.getElementById('add-form');
+        addForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(addForm);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+            const response = await fetch('http://localhost:8000/posts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            if (response.ok) {
+                mostrarElementos();
+                addForm.reset();
+            } else {
+                alert('Error al agregar elemento');
+            }
+        });
+
+        // Manejar el envío del formulario de eliminar elemento
+        const deleteForm = document.getElementById('delete-form');
+        deleteForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const id = document.getElementById('delete-id').value; // Obtener el ID a eliminar
+            const response = await fetch(`http://localhost:8000/posts/${id}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                mostrarElementos();
+                deleteForm.reset();
+            } else {
+                alert('Error al eliminar elemento');
+            }
+        });
+   
+        /// Manejar el envío del formulario de búsqueda
+        const searchForm = document.getElementById('search-form');
+        searchForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const postId = document.getElementById('post-id').value;
+            const response = await fetch(`http://localhost:8000/posts/${postId}`, {
+            method: 'POST'});
+            const postData = await response.json();
+            const searchResults = document.getElementById('search-results');
+            if (response.ok) {
+                searchResults.innerHTML = `
+                    <h2>Resultado de la Búsqueda</h2>
+                    <p>ID: ${postData.id}</p>
+                    <p>Título: ${postData.titulo}</p>
+                    <p>Fecha: ${postData.created_at}</p>
+                    <p>Autor: ${postData.autor}</p>
+                    <p>Género: ${postData.genero}</p>
+                `;
+            } else {
+                searchResults.innerHTML = `<p>Post no encontrado.</p>`;
+                
+            }
+        });
+
+        // Manejar el envío del formulario de actualización
+const updateForm = document.getElementById('update-form');
+updateForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const updateId = document.getElementById('update-id').value;
+    const updatedTitulo = document.getElementById('updated-titulo').value;
+    const updatedAutor = document.getElementById('updated-autor').value;
+    const updatedGenero = document.getElementById('updated-genero').value;
+
+    const data = {
+        id: updateId, // Incluir el ID en los datos enviados
+        titulo: updatedTitulo,
+        autor: updatedAutor,
+        genero: updatedGenero
+    };
+
+    const response = await fetch(`http://localhost:8000/posts/${updateId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    });
+
+    const updateResult = document.getElementById('update-result');
+    if (response.ok) {
+        updateResult.innerHTML = `<p>Elemento actualizado correctamente.</p>`;
+        updateForm.reset();
+    } else {
+        if (response.status === 422) {
+            updateResult.innerHTML = `<p>Error: Datos no válidos.</p>`;
+        } else {
+            updateResult.innerHTML = `<p>Error al actualizar el elemento.</p>`;
+        }
+    }
+});
+    </script>
+    
+</body>
+</html>
