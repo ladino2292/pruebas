@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscar Registro por Número de Documento</title>
+    <style>
+        /* Estilo para campos vacíos */
+        .highlight-empty {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Buscar Registro por Número de Documento</h1>
+    
+    <form id="login-form">
+        <label for="username">Nombre de Usuario:</label>
+        <input type="text" id="username" name="username" autocomplete="off" required>
+        <label for="password">Contraseña:</label>
+        <input type="password" id="password" name="password" autocomplete="off" required>
+        <button type="submit">Iniciar Sesión</button>
+    </form>
+
+    <div id="search-container" style="display: none;">
+        <form id="search-form">
+            <label for="numero_documento">Número de Documento:</label>
+            <input type="text" id="numero_documento" name="numero_documento">
+            <button type="submit">Buscar</button>
+        </form>
+        <div id="search-results"></div>
+        
+        <!-- Formulario para agregar observaciones -->
+        <form id="observaciones-form" style="display: none;">
+            <h2>Agregar Observaciones</h2>
+            <label for="observaciones">Observaciones:</label>
+            <textarea id="observaciones" name="observaciones" cols="80" rows="7"></textarea>
+            <button type="submit">Agregar Observaciones</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            console.log('Formulario de inicio de sesión enviado');
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            try {
+                const response = await fetch('http://localhost:8000/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                if (!response.ok) {
+                    throw new Error(`Error al iniciar sesión: ${response.statusText}`);
+                }
+                // Si la sesión se inició correctamente, ocultar el formulario de inicio de sesión y mostrar el formulario de búsqueda
+                document.getElementById('login-form').style.display = 'none'; // Ocultar el formulario de inicio de sesión
+                document.getElementById('search-container').style.display = 'block'; // Mostrar el contenedor de búsqueda
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        document.getElementById('search-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const numeroDocumento = document.getElementById('numero_documento').value;
+            try {
+                const response = await fetch(`http://localhost:8000/registros/${numeroDocumento}`);
+                if (!response.ok) {
+                    throw new Error(`Error al cargar los datos: ${response.statusText}`);
+                }
+                const data = await response.json();
+                const searchResults = document.getElementById('search-results');
+                searchResults.innerHTML = `
+                    <h2>Resultados de la Búsqueda</h2>
+                    <ul>
+                        ${Object.entries(data).map(([key, value]) => `<li><strong>${key}:</strong> ${value || '<span class="highlight-empty">vacío</span>'}</li>`).join('')}
+                    </ul>
+                `;
+                // Mostrar el formulario para agregar observaciones
+                document.getElementById('observaciones-form').style.display = 'block';
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        document.getElementById('observaciones-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const observaciones = document.getElementById('observaciones').value;
+            const numeroDocumento = document.getElementById('numero_documento').value;
+            try {
+                const response = await fetch('http://localhost:8000/observaciones', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ observaciones, numero_documento: numeroDocumento })
+                });
+                if (!response.ok) {
+                    throw new Error(`Error al agregar observaciones: ${response.statusText}`);
+                }
+                alert('Observaciones agregadas correctamente');
+                                // Reiniciar el campo de observaciones y ocultar el formulario
+                                document.getElementById('observaciones').value = '';
+                document.getElementById('observaciones-form').style.display = 'none';
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    </script>
+    
+</body>
+</html>
